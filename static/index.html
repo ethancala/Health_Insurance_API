@@ -1,18 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<title>MERNa-NE</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Page</title>
+    <script>
+        async function testApi() {
+            const response = await fetch('/api/calculate-risk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    age: document.getElementById('age').value,
+                    feet: document.getElementById('feet').value,
+                    inches: document.getElementById('inches').value,
+                    weight: document.getElementById('weight').value,
+                    systolic: document.getElementById('systolic').value,
+                    diastolic: document.getElementById('diastolic').value,
+                    diseases: document.getElementById('diseases').value.split(',')
+                })
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result, null, 2);
+        }
+    </script>
 </head>
 <body>
-	<h1>MERNa: This is a Node.js and Express hosted Microsoft Azure Template</h1>
-	<p>This repository serves as a template that can be used to create a Node.js and Express based website that can easily
-	be hosted on Microsoft Azure.</p><br />
-
-	MERNa stands for MongoDB, Express, React, abd Node on Azure.
-
-	Additional application functionality includes:<br />
-	<a href="fetching-from-server.html">Accessing Node.js Server-Side Application Programming Interfaces (APIs)</a><br />
-	<a href="fetching-remote-dog-breeds.html">Accessing Remote Application Programming Interfaces (APIs)</a>
+    <h1>Test API</h1>
+    <label>Age: <input type="number" id="age"></label><br>
+    <label>Height (feet): <input type="number" id="feet"></label><br>
+    <label>Height (inches): <input type="number" id="inches"></label><br>
+    <label>Weight (lbs): <input type="number" id="weight"></label><br>
+    <label>Systolic BP: <input type="number" id="systolic"></label><br>
+    <label>Diastolic BP: <input type="number" id="diastolic"></label><br>
+    <label>Diseases (comma-separated): <input type="text" id="diseases"></label><br>
+    <button onclick="testApi()">Test API</button>
+    <h2>Response:</h2>
+    <pre id="result"></pre>
 </body>
 </html>

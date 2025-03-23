@@ -1,5 +1,6 @@
 const express = require('express')
 app = express()
+app.use(express.json());
 
 const cors = require("cors")
 
@@ -15,13 +16,6 @@ app.use(express.static(__dirname + '/static'))
 app.use(cors({ origin: '*' }))
 
 // The app.get functions below are being processed in Node.js running on the server.
-// Implement a custom About page.
-app.get('/about', (request, response) => {
-	console.log('Calling "/about" on the Node.js server.')
-	response.type('text/plain')
-	response.send('About Node.js on Azure Template.')
-})
-
 app.get('/version', (request, response) => {
 	console.log('Calling "/version" on the Node.js server.')
 	response.type('text/plain')
@@ -34,117 +28,12 @@ app.get('/api/ping', (request, response) => {
 	response.send('ping response')
 })
 
-// Return the value of 2 plus 2.
-app.get('/2plus2', (request, response) => {
-	console.log('Calling "/2plus2" on the Node.js server.')
-	response.type('text/plain')
-	response.send('4')
-})
-
-// Add x and y which are both passed in on the URL. 
-app.get('/add-two-integers', (request, response) => {
-	console.log('Calling "/add-two-integers" on the Node.js server.')
-	var inputs = url.parse(request.url, true).query
-	let x = parseInt(inputs.x)
-	let y = parseInt(inputs.y)
-	let sum = x + y
-	response.type('text/plain')
-	response.send(sum.toString())
-})
-
-// Template for calculating BMI using height in feet/inches and weight in pounds.
-app.get('/calculate-bmi', (request, response) => {
-	console.log('Calling "/calculate-bmi" on the Node.js server.')
-	var inputs = url.parse(request.url, true).query
-	const heightFeet = parseInt(inputs.feet)
-	const heightInches = parseInt(inputs.inches)
-	const weight = parseInt(inputs.lbs)
-
-	console.log('Height:' + heightFeet + '\'' + heightInches + '\"')
-	console.log('Weight:' + weight + ' lbs.')
-
-	// Todo: Implement unit conversions and BMI calculations.
-	// Todo: Return BMI instead of Todo message.
-
-	response.type('text/plain')
-	response.send('Todo: Implement "/calculate-bmi"')
-})
-
-// Test a variety of functions.
-app.get('/test', (request, response) => {
-    // Write the request to the log. 
-    console.log(request);
-
-    // Return HTML.
-    response.writeHead(200, {'Content-Type': 'text/html'});
-    response.write('<h3>Testing Function</h3>')
-
-    // Access function from a separate JavaScript module.
-    response.write("The date and time are currently: " + dt.myDateTime() + "<br><br>");
-
-    // Show the full url from the request. 
-    response.write("req.url="+request.url+"<br><br>");
-
-    // Suggest adding something tl the url so that we can parse it. 
-    response.write("Consider adding '/test?year=2017&month=July' to the URL.<br><br>");
-    
-	// Parse the query string for values that are being passed on the URL.
-	var q = url.parse(request.url, true).query;
-    var txt = q.year + " " + q.month;
-    response.write("txt="+txt);
-
-    // Close the response
-    response.end('<h3>The End.</h3>');
-})
-
-// Return Batman as JSON.
-const batMan = {
-	"firstName":"Bruce",
-	"lastName":"Wayne",
-	"preferredName":"Batman",
-	"email":"darkknight@lewisu.edu",
-	"phoneNumber":"800-bat-mann",
-	"city":"Gotham",
-	"state":"NJ",
-	"zip":"07101",
-	"lat":"40.73",
-	"lng":"-74.17",
-	"favoriteHobby":"Flying",
-	"class":"cpsc-24700-001",
-	"room":"AS-104-A",
-	"startTime":"2 PM CT",
-	"seatNumber":"",
-	"inPerson":[
-		"Monday",
-		"Wednesday"
-	],
-	"virtual":[
-		"Friday"
-	]
-}
-
-app.get('/batman', (request, response) => {
-	console.log('Calling "/batman" on the Node.js server.')
-	response.type('application/json')
-	response.send(JSON.stringify(batMan))
-})
-
-// Load your JSON data
-const favoritePlaces = require('./FavoritePlaces.json');
-
-// Create a route that serves the JSON data
-app.get('/api/favorite-places', (req, res) => {
-  res.json(favoritePlaces);
-});
-
-
-
-// Custom 404 page.
-app.use((request, response) => {
-  response.type('text/plain')
-  response.status(404)
-  response.send('404 - Not Found')
-})
+// // Custom 404 page.
+// app.use((request, response) => {
+//   response.type('text/plain')
+//   response.status(404)
+//   response.send('404 - Not Found')
+// })
 
 // Custom 500 page.
 app.use((err, request, response, next) => {
@@ -154,7 +43,81 @@ app.use((err, request, response, next) => {
   response.send('500 - Server Error')
 })
 
-app.listen(port, () => console.log(
-  `Express started at \"http://localhost:${port}\"\n` +
-  `press Ctrl-C to terminate.`)
-)
+
+// Ping API to wake server
+app.get('/api/ping', (req, res) => {
+    res.send('Server is awake!');
+});
+
+// Risk calculation API
+app.post('/api/calculate-risk', (req, res) => {
+    const { age, feet, inches, weight, systolic, diastolic, diseases } = req.body;
+
+    // Calculate BMI (convert to metric)
+    const totalInches = (feet * 12) + inches;
+    const heightMeters = totalInches * 0.0254; // inches to meters
+    const weightKg = weight * 0.453592; // pounds to kg
+    const bmi = weightKg / (heightMeters * heightMeters);
+
+    // Age points
+    let agePoints = 0;
+    if (age < 38) agePoints = 0;
+    else if (age < 45) agePoints = 10;
+    else if (age < 60) agePoints = 20;
+    else agePoints = 30;
+
+    // BMI points
+    let bmiPoints = 0;
+    if (bmi >= 18.5 && bmi <= 24.9) bmiPoints = 0; // normal
+    else if (bmi >= 25.0 && bmi <= 29.9) bmiPoints = 30; // overweight
+    else bmiPoints = 75; // obese
+
+    // Blood Pressure points and category
+    let bpPoints = 0;
+    let bpCategory = '';
+    if (systolic > 180 || diastolic > 120) {
+        bpPoints = 100;
+        bpCategory = 'Crisis';
+    } else if (systolic >= 140 || diastolic >= 90) {
+        bpPoints = 75;
+        bpCategory = 'Stage 2';
+    } else if (systolic >= 130 || diastolic >= 80) {
+        bpPoints = 30;
+        bpCategory = 'Stage 1';
+    } else if (systolic >= 120) {
+        bpPoints = 15;
+        bpCategory = 'Elevated';
+    } else {
+        bpPoints = 0;
+        bpCategory = 'Normal';
+    }
+
+    // Family disease points
+    const diseasePoints = diseases.length * 10;
+
+    // Total score
+    const totalScore = agePoints + bmiPoints + bpPoints + diseasePoints;
+
+    // Risk category
+    let riskCategory = '';
+    if (totalScore <= 20) riskCategory = 'Low Risk';
+    else if (totalScore <= 50) riskCategory = 'Moderate Risk';
+    else if (totalScore <= 75) riskCategory = 'High Risk';
+    else riskCategory = 'Uninsurable';
+
+    // Response
+    res.json({
+        agePoints,
+        bmi,
+        bmiPoints,
+        bpCategory,
+        bpPoints,
+        diseasePoints,
+        totalScore,
+        riskCategory
+    });
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
