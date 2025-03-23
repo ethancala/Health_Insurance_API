@@ -23,9 +23,31 @@ app.get('/api/ping', (req, res) => {
     res.type('text/plain').send('Server is awake!');
 });
 
+
+// Function to calculate disease points
+function calculateDiseasePoints(familyHistory) {
+    let diseasePoints = 0;
+
+    // Assign points for each disease in the family history
+    if (familyHistory.includes("diabetes")) {
+        diseasePoints += 10; // Example points for diabetes
+    }
+    if (familyHistory.includes("cancer")) {
+        diseasePoints += 15; // Example points for cancer
+    }
+    if (familyHistory.includes("alzheimers")) {
+        diseasePoints += 20; // Example points for Alzheimer's
+    }
+
+    return diseasePoints;
+}
+
+
+
+
 // Risk calculation API
 app.post('/api/calculate-risk', (req, res) => {
-    const { age, feet, inches, weight, systolic, diastolic, diseases } = req.body;
+    const { age, feet, inches, weight, systolic, diastolic, family_history} = req.body;
 
  // Log the inputs for debugging
     console.log("Received inputs:");
@@ -34,11 +56,11 @@ app.post('/api/calculate-risk', (req, res) => {
     console.log("Inches:", inches);
     console.log("Weight (lbs):", weight);
     console.log("Blood Pressure:", systolic, diastolic);
-    console.log("Diseases:", diseases);
+    console.log("Diseases:", family_history);
 
 
     // Ensure diseases is an array, even if it's empty
-    const diseaseList = Array.isArray(diseases) ? diseases : [];
+    const diseasePoints = calculateDiseasePoints(family_history);
 
     // Calculate BMI (convert to metric)
     const totalInches = (feet * 12) + inches;
@@ -84,8 +106,8 @@ app.post('/api/calculate-risk', (req, res) => {
         bpCategory = 'Normal';
     }
 
-    // Family disease points
-    const diseasePoints = diseaseList.length * 10;
+  
+ 
 
     // Total score
     const totalScore = agePoints + bmiPoints + bpPoints + diseasePoints;
