@@ -1,63 +1,51 @@
-const express = require('express')
-app = express()
+const express = require('express');
+const cors = require('cors');
+
+const app = express();
 app.use(express.json());
+app.use(cors()); 
 
-const cors = require("cors")
+const port = process.env.PORT || 3000;
+const majorVersion = 1;
+const minorVersion = 3;
 
-var url = require('url');
-var dt = require('./date-time');
+// Serve static files
+app.use(express.static(__dirname + '/static'));
 
-const port = process.env.PORT || 3000
-const majorVersion = 1
-const minorVersion = 3
+// API Endpoints
+app.get('/version', (req, res) => {
+    console.log('Calling "/version" on the Node.js server.');
+    res.type('text/plain').send(`Version: ${majorVersion}.${minorVersion}`);
+});
 
-// Use Express to publish static HTML, CSS, and JavaScript files that run in the browser. 
-app.use(express.static(__dirname + '/static'))
-app.use(cors({ origin: '*' }))
-
-// The app.get functions below are being processed in Node.js running on the server.
-app.get('/version', (request, response) => {
-	console.log('Calling "/version" on the Node.js server.')
-	response.type('text/plain')
-	response.send('Version: '+majorVersion+'.'+minorVersion)
-})
-
-app.get('/api/ping', (request, response) => {
-	console.log('Calling "/api/ping"')
-	response.type('text/plain')
-	response.send('ping response')
-})
-
-// // Custom 404 page.
-// app.use((request, response) => {
-//   response.type('text/plain')
-//   response.status(404)
-//   response.send('404 - Not Found')
-// })
-
-// Custom 500 page.
-app.use((err, request, response, next) => {
-  console.error(err.message)
-  response.type('text/plain')
-  response.status(500)
-  response.send('500 - Server Error')
-})
-
-
-// Ping API to wake server
 app.get('/api/ping', (req, res) => {
-    res.send('Server is awake!');
+    console.log('Calling "/api/ping"');
+    res.type('text/plain').send('Server is awake!');
 });
 
 // Risk calculation API
 app.post('/api/calculate-risk', (req, res) => {
     const { age, feet, inches, weight, systolic, diastolic, diseases } = req.body;
 
+ // Log the inputs for debugging
+    console.log("Received inputs:");
+    console.log("Age:", age);
+    console.log("Feet:", feet);
+    console.log("Inches:", inches);
+    console.log("Weight (lbs):", weight);
+    console.log("Blood Pressure:", systolic, diastolic);
+    console.log("Diseases:", diseases);
+
+
+    // Ensure diseases is an array, even if it's empty
+    const diseaseList = Array.isArray(diseases) ? diseases : [];
+
     // Calculate BMI (convert to metric)
     const totalInches = (feet * 12) + inches;
     const heightMeters = totalInches * 0.0254; // inches to meters
     const weightKg = weight * 0.453592; // pounds to kg
     const bmi = weightKg / (heightMeters * heightMeters);
+
 
     // Age points
     let agePoints = 0;
@@ -68,9 +56,13 @@ app.post('/api/calculate-risk', (req, res) => {
 
     // BMI points
     let bmiPoints = 0;
-    if (bmi >= 18.5 && bmi <= 24.9) bmiPoints = 0; // normal
-    else if (bmi >= 25.0 && bmi <= 29.9) bmiPoints = 30; // overweight
-    else bmiPoints = 75; // obese
+    if (bmi >= 18.5 && bmi <= 24.9) {
+        bmiPoints = 0; // normal
+    } else if (bmi >= 25.0 && bmi <= 29.9) {
+        bmiPoints = 30; // overweight
+    } else {
+        bmiPoints = 75; // obese
+    }
 
     // Blood Pressure points and category
     let bpPoints = 0;
@@ -93,31 +85,50 @@ app.post('/api/calculate-risk', (req, res) => {
     }
 
     // Family disease points
-    const diseasePoints = diseases.length * 10;
+    const diseasePoints = diseaseList.length * 10;
 
     // Total score
     const totalScore = agePoints + bmiPoints + bpPoints + diseasePoints;
 
-    // Risk category
-    let riskCategory = '';
-    if (totalScore <= 20) riskCategory = 'Low Risk';
-    else if (totalScore <= 50) riskCategory = 'Moderate Risk';
-    else if (totalScore <= 75) riskCategory = 'High Risk';
-    else riskCategory = 'Uninsurable';
+    // Log each category score for debugging
+    console.log("Age Points:", agePoints);
+    console.log("BMI Points:", bmiPoints);
+    console.log("Blood Pressure Points:", bpPoints);
+    console.log("Disease Points:", diseasePoints);
+    console.log("Total Score:", totalScore);
+    console.log("Blood Pressure Category:", bpCategory);
 
-    // Response
-    res.json({
-        agePoints,
-        bmi,
-        bmiPoints,
-        bpCategory,
-        bpPoints,
-        diseasePoints,
-        totalScore,
-        riskCategory
-    });
+    // Risk category and suggestion based on the total score
+    let riskCategory = '';
+    let suggestion = '';
+
+    if (totalScore <= 20) {
+        riskCategory = 'Normal';
+        suggestion = 'Maintain a healthy lifestyle.';
+    } else if (totalScore <= 50) {
+        riskCategory = 'Moderate Risk';
+        suggestion = 'Consult a healthcare provider soon.';
+    } else if (totalScore <= 75) {
+        riskCategory = 'High Risk';
+        suggestion = 'Seek medical attention as soon as possible.';
+    } else {
+        riskCategory = 'Uninsurable';
+        suggestion = 'Seek immediate medical care and consider insurance options.';
+    }
+
+    // Return the risk level and suggestion
+    res.json({ risk_level: riskCategory, suggestion });
 });
 
+
+
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+    console.error(err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+});
+
+// Start Server
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
