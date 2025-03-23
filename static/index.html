@@ -6,6 +6,12 @@
     <title>API Test Page</title>
     <script>
         async function testApi() {
+
+            const familyHistory = [];
+            document.querySelectorAll('input[name="disease"]:checked').forEach((checkbox) => {
+            familyHistory.push(checkbox.value);
+        });
+
             const response = await fetch('/api/calculate-risk', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -16,7 +22,7 @@
                     weight: document.getElementById('weight').value,
                     systolic: document.getElementById('systolic').value,
                     diastolic: document.getElementById('diastolic').value,
-                    diseases: document.getElementById('diseases').value.split(',')
+                    family_history: familyHistory // Send the selected family history diseases
                 })
             });
             const result = await response.json();
@@ -32,7 +38,14 @@
     <label>Weight (lbs): <input type="number" id="weight"></label><br>
     <label>Systolic BP: <input type="number" id="systolic"></label><br>
     <label>Diastolic BP: <input type="number" id="diastolic"></label><br>
-    <label>Diseases (comma-separated): <input type="text" id="diseases"></label><br>
+    <div class="field-group">
+        <label>Family History:</label>
+        <div class="checkbox-group">
+            <label><input type="checkbox" id="diabetes" name="disease" value="diabetes"> Diabetes</label>
+            <label><input type="checkbox" id="cancer" name="disease" value="cancer"> Cancer</label>
+            <label><input type="checkbox" id="alzheimers" name="disease" value="alzheimers"> Alzheimer's</label>
+        </div>
+    </div>
     <button onclick="testApi()">Test API</button>
     <h2>Response:</h2>
     <pre id="result"></pre>
